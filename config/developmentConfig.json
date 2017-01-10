@@ -1,0 +1,4 @@
+{
+	"DB_URI": "mongodb://test:test@ds159978.mlab.com:59978/interest",
+	"PORT": 3000
+}
