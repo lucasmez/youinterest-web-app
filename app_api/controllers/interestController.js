@@ -9,6 +9,30 @@ function sendJson(res, contents, status) {
 	res.json(contents);
 }
 
+exports.getInterestByName = (req, res, next) => {
+     if(!(req.query && req.query.title)) {
+        return next( HTTPError(404, "No title parameter in request") );
+    }
+    
+    Interest.find({title: req.query.title})
+        .then( interest => {
+            if(!interest.length)
+                return next( HTTPError(404, "Interest not found") );	
+
+            interest = interest[0];
+        
+             let sendValue = {
+                title: interest.title,
+                description: interest.description,
+                usersInterest: interest.usersInterest || []
+            }
+			sendJson(res, sendValue);
+        
+        }, err => {
+            next( HTTPError(404, "Interest not found") );
+        });
+};
+
 
 exports.getOneInterest = (req, res, next) => {
     if(!(req.params && req.params.interestId)) {

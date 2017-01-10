@@ -18,6 +18,32 @@ function getUserId(id, next) {
     }
 }
 
+exports.getUserByName = (req, res, next) => {
+    if(!(req.query && req.query.name)) {
+        return next( HTTPError(404, "No name parameter in request") );
+    }
+    
+    User.find({name: req.query.name})
+        .then( user => {
+            if(!user.length)
+                return next( HTTPError(404, "User not found") );	
+
+            user = user[0];
+        
+            let sendValue = {
+                name: user.name,
+                bio: user.bio || "",
+                createdOn: user.createdOn,
+                interests: user.interests || []
+            };
+            
+			sendJson(res, sendValue);
+        
+        }, err => {
+            next( HTTPError(404, "User not found") );
+        });
+};
+
 exports.getOneUser = (req, res, next) => {
 	if(!(req.params && req.params.userId)) {
 		return next( HTTPError(404, "No user id in request") );
