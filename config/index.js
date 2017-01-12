@@ -1,16 +1,21 @@
-let config = {};
-module.exports = config;
-
 // Production
 if(process.env.NODE_ENV === "production") {
-	config.DB_URI = process.env.MONGOLAB_URI;  // Database URI
-	config.PORT = process.env.PORT;            // Server listening port   
+    let config = {};
+ 
+	config.DB_URI = process.env.MONGOLAB_URI;                           // Database URI
+	config.PORT = process.env.PORT;                                     // Server listening port  
+    config.SESSION.SECRET = process.env.SESSION_SECRET || "mySecret";
+    config.SERVER_URL = process.env.SERVER_URL;
+    config.DB_SALT_FACTOR = process.env.DB_SALT_FACTOR || 10;
+    
+    module.exports = config;
 	console.log("Production mode.");
 }
 
 //Development
 else {
 	let developConfig;
+    
 	try {
 		developConfig = require('./developmentConfig');
 	} catch(e) {
@@ -18,7 +23,7 @@ else {
 		process.exit(1);
 	}
 
-	module.exports = config = developConfig;
+	module.exports = developConfig;
 	console.log("Development mode.");
 }
 
