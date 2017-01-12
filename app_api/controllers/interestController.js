@@ -13,7 +13,7 @@ exports.getInterestByName = (req, res, next) => {
      if(!(req.query && req.query.title)) {
         return next( HTTPError(404, "No title parameter in request") );
     }
-    
+
     Interest.find({title: req.query.title})
         .then( interest => {
             if(!interest.length)
@@ -24,7 +24,7 @@ exports.getInterestByName = (req, res, next) => {
              let sendValue = {
                 title: interest.title,
                 description: interest.description,
-                usersInterest: interest.usersInterest || []
+                usersInterested: interest.usersInterested || []
             }
 			sendJson(res, sendValue);
         
@@ -47,7 +47,7 @@ exports.getOneInterest = (req, res, next) => {
             let sendValue = {
                 title: interest.title,
                 description: interest.description,
-                usersInterest: interest.usersInterest || []
+                usersInterested: interest.usersInterested || []
             }
 			sendJson(res, sendValue);
         
@@ -84,13 +84,16 @@ exports.updateInterest = (req, res, next) => {
     
     let interestId = req.params.interestId;
     
+    let {title, description} = req.body;
+    if(!(title || description)) {
+        return next( HTTPError(404, "No title or description in body") );
+    }
+    
     try {
         interestId = mongoose.Types.ObjectId(interestId);
     } catch(e) {
         return next( HTTPError(404, "Interest not found") );   
     }
-    
-    let {title, description} = req.body;
     
     Interest.findById(interestId).select("-usersInterested").exec()
         .then( (interest) => {
