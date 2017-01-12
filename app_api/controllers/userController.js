@@ -18,30 +18,94 @@ function getUserId(id, next) {
     }
 }
 
-exports.getUserByName = (req, res, next) => {
-    if(!(req.query && req.query.name)) {
-        return next( HTTPError(404, "No name parameter in request") );
+
+exports.getUsers = (req, res, next) => {
+    if(!(req.query && (req.query.name || req.query.interest))) {
+        return next( HTTPError(404, "No name or query parameter in request") );
+    }
+
+    let {name, interest} = req.query;
+    let queryObj = {};
+    
+    if(name) 
+        queryObj.name = name;
+    
+    if(interest) {
+        Interest.find({title: interest}).then( interests => {
+            if(!interests || !interests.length)
+                return next(HTTPError(404, "Interest does not exist."));
+            
+            queryObj.interests = interests[0];
+            
+            sendUserInfo();
+            
+        }, err => {
+            next( HTTPError(404, "Interest does not exist.") );
+        });
     }
     
-    User.find({name: req.query.name})
-        .then( user => {
-            if(!user.length)
-                return next( HTTPError(404, "User not found") );	
+    else
+        sendUserInfo();
+    
 
-            user = user[0];
-        
-            let sendValue = {
-                name: user.name,
-                bio: user.bio || "",
-                createdOn: user.createdOn,
-                interests: user.interests || []
-            };
+    function sendUserInfo() {
+        User.find(queryObj).select("-password")
+            .then( users => {
             
-			sendJson(res, sendValue);
-        
-        }, err => {
-            next( HTTPError(404, "User not found") );
+                if(!users.length)
+                    return next( HTTPError(404, "User not found") );	
+
+                let allPromises = users.map( user => {
+                    
+                    return new Promise( (resolve, reject) => {
+                        getInterestsNames(user).then( interestTitleAr => {
+                            resolve({
+                                name: user.name,
+                                bio: user.bio || "",
+                                createdOn: user.createdOn,
+                                interests: interestTitleAr
+                            });
+                        }, err => reject(err));
+                    });
+                    
+                });
+            
+                Promise.all(allPromises).then( allUsers => {
+                    sendJson(res, allUsers);
+                    
+                }, err => {
+                    next( HTTPError(500, "Error reading users and interests from database.") );
+                });
+            
+
+            }, err => {
+                next( HTTPError(404, "User not found") );
+            });
+    }
+    
+    function getInterestsNames(user) {
+        return new Promise( (resolve, reject) => {
+            if(user.interests.length === 0)
+                resolve([]);
+            
+            let allPromises = [];
+            
+            user.interests.forEach( interest => {
+                allPromises.push(Interest.findById(interest));
+            });
+     
+            Promise.all(allPromises).then(allInterests => {
+                let titlesArray = allInterests.map( oneInterest => {
+                    return oneInterest.title; 
+                });
+                
+                resolve(titlesArray);
+            }, err => reject(err) );
+            
         });
+    }
+    
+
 };
 
 exports.getOneUser = (req, res, next) => {
@@ -70,14 +134,15 @@ exports.getOneUser = (req, res, next) => {
 };
 
 exports.createUser =  (req, res, next) => {
-	if(!(req.body && req.body.name)) {
+	if(!(req.body && req.body.name && req.body.password)) {
 		return next( HTTPError(400, "no name parameter") );
 	}
 
-	let {name, bio} = req.body;
+	let {name, bio, password} = req.body;
 	let newUser = new User({
 		name,
-		bio: bio || ""
+		bio: bio || "",
+        password
 	});
 	
 	newUser.save()
@@ -124,7 +189,6 @@ exports.updateUser = (req, res, next) => {
         });
 };
 
-/*TODO======DEAL WITH THIS LATER=======*/
 exports.addInterest = (req, res, next) => {
     if(!(req.params && req.params.userId)) {
         return next( HTTPError(404, "No user id in request.") );
@@ -139,37 +203,36 @@ exports.addInterest = (req, res, next) => {
         return next( HTTPError(404, "User not found.") ); 
     
     
-    User.findById(userId).exec()
-        .then( (user) => {
-            if(!user) 
-                throw HTTPError(404, "User not found.");
-        
+    Interest.findOne({title: req.body.interest})
+        .then( interest => {    // interest was found
             return new Promise( (resolve, reject) => {
-                Interest.find({title: req.body.interest}).exec()
-                    .then( interest => resolve({user, interest:interest[0]}), (err) => {
-                        reject(HTTPError(404, "Interest not found"))
-                    });
+                User.findOneAndUpdate({_id: userId}, {$addToSet: {interests: interest._id}})
+                    .then( () => resolve(interest), err => reject(err));
             });
-                    
-        }, (err) => {
-            return Promise.reject(HTTPError(404, "User not found"));
+        
+        }, err => { // interest not found
+            next(HTTPError(404, "Interest not found"));
         })
-        .then( ({user, interest}) => {
-            if(!interest) 
-                throw HTTPError(404, "Interest not found.") 
+    
+        .then( (interest) => {  // user was updated
+            interest.update({$addToSet: {usersInterested: userId}})
             
-            user.interests.push(interest._id);
-            user.save()
-                .then( () => {
-                    sendJson(res, {"message: ": "User interest updated." });
-                }, (err) => {
-                    throw HTTPError(400, "Could not update user interest.");
+                .then( () => { // Update successfull
+                    sendJson(res, {message: "User updated."});
+                
+                }, err => { // Failed to update interest
+                    User.findOneAndUpdate({_id: userId}, {$pull: {interests: interest._id}}) // Failed to undo first update in user
+                        .catch( err => {
+                            console.error(`Database error. Remove user.interests value ${interest._id} from user ${userId}`);
+                        })
                 });
-        })
-        .catch( err => next(err) );
+
+        }, err => { // failed to update user
+            reject(HTTPError(500, "Could not update user."));
+        });
 
 };
-/*====================================*/
+
 
 exports.deleteUser = (req, res, next) => {
     if(!(req.params && req.params.userId)) {
@@ -187,3 +250,88 @@ exports.deleteUser = (req, res, next) => {
             next( HTTPError(404, "Could not remove user.") );
         });
 };
+
+exports.deleteInterest = (req, res, next) => {
+    if(!(req.params && req.params.userId)) {
+        return next( HTTPError(404, "No user id in request.") );
+    }
+    
+    if(!(req.body && req.body.interest)) {
+        return next( HTTPError(404, "No interest name in the request.") );
+    }
+    
+    let userId = getUserId(req.params.userId);
+    if(!userId) 
+        return next( HTTPError(404, "User not found.") ); 
+    
+    Interest.findOne({title: req.body.interest})
+        .then( (interest) => { // interest found
+            
+            return new Promise( (resolve, reject) => {
+                User.findOneAndUpdate({_id: userId}, {$pull: {interests: interest._id}})
+                    .then ( () => resolve(interest), err => reject(err));
+            });
+        
+        }, err => { // interest not found
+            next( HTTPError(404, "Interest not found.") );
+        })
+    
+        .then( interest => {  // interest removed from user
+            
+            interest.update({$pull: {usersInterested: userId}})
+            
+                .then( () => { // update successfull
+                    sendJson(res, {message: "User updated."});
+                
+                }, err => { // could not remove user from interest.usersInterested
+                    User.findOneAndUpdate({_id: userId}, {$push: {interests: interest._id}})
+                    
+                        .catch( err => { // failed to undo user removal
+                            console.error(`Database error. Add user.interests value ${interest._id} to user ${userId}`);
+                        });
+                });
+        
+        }, err => { // could not remove interest from user
+            next(HTTPError(500, "Could not update user."));
+        });
+}
+
+exports.authenticate = (req, res, next) => {
+    let {username, password} = req.body;
+    
+    if(!(username && password)) {
+        return sendJson(res, {"authentication": "failed"}, 404);
+    }
+    
+    User.find({name: username})
+        .then( user => {
+            user = user[0];
+            if(!user)
+                return sendJson(res, {"authentication": "User does not exist"}, 404);
+        
+            return new Promise( ( resolve, reject) => {
+                user.authenticate(password, (err, matched) => {
+                    if(err)
+                        reject(err);
+
+                    if(matched) {
+                        sendJson(res, {"authentication": "success"}, 200);
+                        resolve();
+                    }
+                    
+                    else {
+                        sendJson(res, {"authentication": "Wrong password."}, 404);
+                        resolve();
+                    }
+                        
+
+                });
+            });
+        
+        }, err => {
+            sendJson(res, {"authentication": "User does not exist"}, 404);
+        })
+//        .catch( err => {
+//            sendJson(res, {"authentication": "Error trying to authenticate."}, 404);
+//        });
+}
