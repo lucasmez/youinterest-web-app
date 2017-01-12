@@ -5,15 +5,17 @@ const api = new Router();
 module.exports = api;
 
 // Users
-api.get("/users", users.getUserByName);
+api.get("/users", users.getUsers);     // Expects name and/or interest queries
 api.get("/users/:userId", users.getOneUser);
+api.post("/authenticate", users.authenticate);
 api.post("/users", users.createUser);
 api.post("/users/:userId/interest", users.addInterest);
 api.put("/users/:userId", users.updateUser);
 api.delete("/users/:userId", users.deleteUser);
+api.delete("/users/:userId/interest", users.deleteInterest);
 
 // Interests
-api.get("/interest", interests.getInterestByName);
+api.get("/interest", interests.getInterestByName);  // Expects title query
 api.get("/interest/:interestId", interests.getOneInterest);
 api.post("/interest", interests.createInterest);
 api.put("/interest/:interestId", interests.updateInterest);
