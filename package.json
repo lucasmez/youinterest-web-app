@@ -4,14 +4,22 @@
   "description": "A simple web application",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+      "start": "node server.js"
   },
   "author": "Lucas Mezalira",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.15.3",
+    "bcrypt": "^1.0.2",
     "bluebird": "^3.4.7",
     "body-parser": "^1.15.2",
+    "connect-flash": "^0.1.1",
+    "ejs": "^2.5.5",
     "express": "^4.14.0",
-    "mongoose": "^4.7.6"
+    "express-session": "^1.14.2",
+    "mongoose": "^4.7.6",
+    "request": "^2.79.0",
+    "underscore": "^1.8.3"
   }
 }
