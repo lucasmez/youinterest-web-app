@@ -2,11 +2,31 @@ module.exports = {
     entry: './src/app.jsx',
     output: {
         path: __dirname,
-        filename: './public/javascripts/bundle.js'
+        filename: './public/javascripts/app.js'
     },
     resolve: {
         root: __dirname,
-        extensions: ['', '.js', '.jsx', '.json']
+        extensions: ['', '.js', '.jsx', '.json'],
+        alias: {
+            Main: 'src/components/Main.jsx',
+            Search: 'src/components/Search.jsx',
+            SiteBar: 'src/components/SiteBar.jsx',
+            Interest: 'src/components/interest_page/Interest.jsx',
+            InterestAbout: 'src/components/interest_page/InterestAbout.jsx',
+            InterestUsers: 'src/components/interest_page/InterestUsers.jsx',
+            InterestVideos: 'src/components/interest_page/InterestVideos.jsx',
+            InterestMeetups: 'src/components/interest_page/InterestMeetups.jsx',
+            InterestDiscussion: 'src/components/interest_page/InterestDiscussion.jsx',
+            MainPage: 'src/components/main_page/MainPage.jsx',
+            MainPagePopular: 'src/components/main_page/MainPagePopular.jsx',
+            MainPageDigest: 'src/components/main_page/MainPageDigest.jsx',
+            InterestItem: 'src/components/InterestItem.jsx',
+            Matches: 'src/components/Matches.jsx',
+            UserProfile: 'src/components/UserProfile.jsx',
+            MeetupItem: 'src/components/interest_page/MeetupItem.jsx',
+            VideoPlayer: 'src/components/youtube_video/VideoPlayer.jsx',
+            VideoList: 'src/components/youtube_video/VideoList.jsx'
+        }
     },
     module: {
         loaders: [
