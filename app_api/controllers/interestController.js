@@ -24,7 +24,9 @@ exports.getInterestByName = (req, res, next) => {
              let sendValue = {
                 title: interest.title,
                 description: interest.description,
-                usersInterested: interest.usersInterested || []
+                usersInterested: interest.usersInterested || [],
+                category: interest.category || "",
+                tags: interest.tags || []
             }
 			sendJson(res, sendValue);
         
