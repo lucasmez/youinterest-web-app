@@ -73,7 +73,7 @@ module.exports.doLogin = (req, res, next) => {
 
 module.exports.loginRender = (req, res, next) => {
     if(req.session.account)
-        res.redirect(`/user/${req.session.account.name}`);
+        res.redirect("/");
     
     else
         res.render("login", {pageTitle: "Login"});
