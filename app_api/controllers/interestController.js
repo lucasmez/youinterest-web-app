@@ -58,15 +58,20 @@ exports.getOneInterest = (req, res, next) => {
 }
 
 exports.createInterest =  (req, res, next) => {
-    if(!(req.body && req.body.title)) {
-		return next( HTTPError(400, "no title parameter") );
+    if(!(req.body && req.body.title && req.body.category)) {
+		return next( HTTPError(400, "no title or category parameter") );
 	}
 
-	let {title, description} = req.body;
+	let {title, description, tags, category} = req.body;
+    
+    if(tags)
+        tags = tags.split(",");
     
 	let newInterest = new Interest({
-		title,
-		description: description || ""
+		title: title,
+		description: description || "",
+        tags: tags || [],
+        category: category
 	});
 	
 	newInterest.save()
@@ -84,11 +89,11 @@ exports.updateInterest = (req, res, next) => {
     
     let interestId = req.params.interestId;
     
-    let {title, description} = req.body;
-    if(!(title || description)) {
-        return next( HTTPError(404, "No title or description in body") );
-    }
+    let {title, description, tags, category} = req.body;
     
+    if(tags)
+        tags = tags.split(",");
+
     try {
         interestId = mongoose.Types.ObjectId(interestId);
     } catch(e) {
@@ -102,6 +107,8 @@ exports.updateInterest = (req, res, next) => {
         
             interest.title = title || interest.title;
             interest.description = description || interest.description;
+            interest.tags = tags || interest.tags;
+            interest.category = category || interest.category;
             
             return new Promise( (resolve, reject) => {
                 interest.save()
