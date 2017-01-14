@@ -8,11 +8,11 @@ const categories = ['other', 'outdoors & adventure', 'tech', 'family', 'health',
                    ];
 
 const InterestSchema = new mongoose.Schema({
-	title: {type: String, required:true},
-	description: String,
+    title: {type: String, required:true},
+    description: String,
     tags: [String],
     category: {type: String, required: true, enum: categories},
-	usersInterested: [Schema.Types.ObjectId]	
+    usersInterested: [Schema.Types.ObjectId]	
 });
 
 
