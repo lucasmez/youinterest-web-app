@@ -1,3 +1,5 @@
+const webpack = require('webpack');
+
 module.exports = {
     entry: './src/app.jsx',
     output: {
@@ -33,11 +35,16 @@ module.exports = {
     module: {
         loaders: [
             {
-                loader: 'babel-loader',
+                loader: 'babel',
                 query: {
-                    presets: ['react', 'es2015', 'es2016']
+                    presets: ['react', 'es2015', 'es2016'],
+                    "env": {
+                        "production": {
+                                "presets": ["babili"]
+                        }
+                    }
                 },
-                test: /\.jsx$/,
+                test: /\.jsx?$/,
                 exclude: /(node_modules|config|app_api|app_server)/
             },
             {
