@@ -37,10 +37,11 @@ class Main extends Component {
             );
         }
         
+        //TODO This is not updating!
         else {
             return (
                 <div className="container">
-                    <SearchResults searchTerm={this.state.searchTerm} /> //TODO This is not updating!
+                    <SearchResults searchTerm={this.state.searchTerm} />
                 </div>
             ); 
         }
