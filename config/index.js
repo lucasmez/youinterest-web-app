@@ -4,7 +4,7 @@ if(process.env.NODE_ENV === "production") {
  
 	config.DB_URI = process.env.MONGOLAB_URI;                           // Database URI
 	config.PORT = process.env.PORT;                                     // Server listening port  
-    config.SESSION.SECRET = process.env.SESSION_SECRET || "mySecret";
+    config.SESSION = {SECRET: process.env.SESSION_SECRET || "mySecret"};
     config.SERVER_URL = process.env.SERVER_URL;
     config.DB_SALT_FACTOR = process.env.DB_SALT_FACTOR || 10;
     
