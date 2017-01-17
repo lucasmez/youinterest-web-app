@@ -18,93 +18,168 @@ function getUserId(id, next) {
     }
 }
 
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
 
 exports.getUsers = (req, res, next) => {
-    if(!(req.query && (req.query.name || req.query.interest))) {
-        return next( HTTPError(404, "No name or query parameter in request") );
-    }
-
-    let {name, interest} = req.query;
-    let queryObj = {};
+    if(Object.keys(req.query).length === 0) // no query
+        return next( HTTPError(404, "No query parameters.") );
     
-    if(name) 
-        queryObj.name = name;
+    let {name, createdOn, friends, interests, fields, limit, mode, format} = req.query;
     
-    if(interest) {
-        Interest.find({title: interest}).then( interests => {
-            if(!interests || !interests.length)
-                return next(HTTPError(404, "Interest does not exist."));
-            
-            queryObj.interests = interests[0];
-            
-            sendUserInfo();
+    buildQuery().exec()
+    .then( usersAr => {
+        if(usersAr.length === 0)
+            return next( HTTPError(404, "No users found.") ); 
+        
+        if(!format || format === "id")
+            return sendJson(res, usersAr);
+        
+        else if(format !== "value")
+            return next( HTTPError(404, "format parameter should be either 'id' or 'value'.") ); 
+        
+        replaceAllIdsForValues(usersAr).then( users => {
+            sendJson(res, users);
             
         }, err => {
-            next( HTTPError(404, "Interest does not exist.") );
+            next( err );
         });
+        
+        
+    }, err => {
+        next( HTTPError(500, "Error making users query.") );
+    });
+    
+    function buildQuery() {
+        let query = {},
+            modee = (mode && (mode === "or")) ? "or" : "and"; //query format default to 'and'
+         
+            
+        if(name)
+            query.name = new RegExp("^"+escapeRegExp(name), "i");
+        
+//        if(createdOn)
+//            query.createdOn = createdOn; //Change to right format
+        
+        if(friends) {
+            if(modee === "and") 
+                query.friends = {$all: friends.split(",")}
+            
+            else 
+                friends.tags = {$in: friends.split(",")}; 
+        }
+        
+        if(interests) {    
+            if(modee === "and") 
+                query.interests = {$all: interests.split(",")}
+            
+            else 
+                query.interests = {$in: interests.split(",")}; 
+        }
+
+        query = User.find(query);
+        
+        if(fields)
+            query = query.select(fields.replace(/,/g, " "));
+        
+        if(limit)
+            query = query.limit(parseInt(limit));
+        
+        return query;
     }
     
-    else
-        sendUserInfo();
-    
-
-    function sendUserInfo() {
-        User.find(queryObj).select("-password")
-            .then( users => {
-            
-                if(!users.length)
-                    return next( HTTPError(404, "User not found") );	
-
-                let allPromises = users.map( user => {
-                    
-                    return new Promise( (resolve, reject) => {
-                        getInterestsNames(user).then( interestTitleAr => {
-                            resolve({
-                                name: user.name,
-                                bio: user.bio || "",
-                                createdOn: user.createdOn,
-                                interests: interestTitleAr
-                            });
-                        }, err => reject(err));
-                    });
-                    
+    function replaceAllIdsForValues(usersAr) {
+        //TODO Make this parellel instead of sequential
+        return replaceInterestsIdsForTitles(usersAr)
+                .then( users => {
+                    return replaceFriendsIdsForNames(users)
+                })
+                .then( users => {
+                    return replaceMatchesIdsForNames(users)
                 });
-            
-                Promise.all(allPromises).then( allUsers => {
-                    sendJson(res, allUsers);
-                    
-                }, err => {
-                    next( HTTPError(500, "Error reading users and interests from database.") );
-                });
-            
-
-            }, err => {
-                next( HTTPError(404, "User not found") );
-            });
+      
     }
     
-    function getInterestsNames(user) {
-        return new Promise( (resolve, reject) => {
-            if(user.interests.length === 0)
-                resolve([]);
+    function replaceInterestsIdsForTitles(usersAr) {
+        return Promise.all(usersAr.map( user => {
+            if(!user.interests || user.interests.length === 0)
+                return Promise.resolve(user);
             
-            let allPromises = [];
-            
-            user.interests.forEach( interest => {
-                allPromises.push(Interest.findById(interest));
-            });
-     
-            Promise.all(allPromises).then(allInterests => {
-                let titlesArray = allInterests.map( oneInterest => {
-                    return oneInterest.title; 
-                });
+            return Interest.find({_id: {$in: user.interests}}).select("title")
+                    .then( interests => {
+                        let retUser = {
+                            _id: user._id,
+                            name: user.name,
+                            bio: user.bio,
+                            createdOn: user.createdOn,
+                            friends: user.friends,
+                            matches: user.matches
+                        };
                 
-                resolve(titlesArray);
-            }, err => reject(err) );
+                        retUser.interests = interests.map( interest => interest.title);
+
+                        return retUser;
+                
+                    }, err => {
+                        return HTTPError(500, "Error making interests titles queries.")
+                    });
+        }));
+    }  
+    
+    function replaceFriendsIdsForNames(usersAr) {  
+        return Promise.all(usersAr.map( user => {
+            if(!user.friends || user.friends.length === 0)
+                return Promise.resolve(user);
             
-        });
+            return User.find({_id: {$in: user.friends}}).select("name")
+                    .then( usersResults => {
+                        let retUser = {
+                            _id: user._id,
+                            name: user.name,
+                            bio: user.bio,
+                            createdOn: user.createdOn,
+                            interests: user.interests,
+                            matches: user.matches
+                        };
+                
+                        retUser.friends = usersResults.map( thisUser => thisUser.name);
+        
+                        return retUser;
+                
+                    }, err => {
+                        return HTTPError(500, "Error making users names queries.")
+                    });
+        }));
     }
     
+    function replaceMatchesIdsForNames(usersAr) {  
+        return Promise.all(usersAr.map( user => {
+            if(!user.matches || user.matches.length === 0)
+                return Promise.resolve(user);
+            
+            return User.find({_id: {$in: user.matches}}).select("name")
+                    .then( usersResults => {
+                        let retUser = {
+                            _id: user._id,
+                            name: user.name,
+                            bio: user.bio,
+                            createdOn: user.createdOn,
+                            interests: user.interests,
+                            friends: user.friends
+                        };
+                
+                
+                        retUser.matches = usersResults.map( thisUser => thisUser.name);
+  
+                        return retUser;
+                
+                    }, err => {
+                        return HTTPError(500, "Error making users names queries.")
+                    });
+        }));
+    }
 
 };
 
@@ -122,7 +197,9 @@ exports.getOneUser = (req, res, next) => {
                 name: user.name,
                 bio: user.bio || "",
                 createdOn: user.createdOn,
-                interests: user.interests || []
+                interests: user.interests || [],
+                friends: user.friends || [],
+                matches: user.matches || []
             };
             
 			sendJson(res, sendValue);
@@ -135,7 +212,7 @@ exports.getOneUser = (req, res, next) => {
 
 exports.createUser =  (req, res, next) => {
 	if(!(req.body && req.body.name && req.body.password)) {
-		return next( HTTPError(400, "no name parameter") );
+		return next( HTTPError(400, "no name or password parameter") );
 	}
 
 	let {name, bio, password} = req.body;
@@ -165,7 +242,7 @@ exports.updateUser = (req, res, next) => {
     
     let {name, bio} = req.body;
     
-    User.findById(userId).select("-interests").exec()
+    User.findById(userId).select("-interests -friends -matches").exec()
         .then( (user) => {
             if(!user) 
                 throw HTTPError(404, "User not found.");
@@ -228,7 +305,7 @@ exports.addInterest = (req, res, next) => {
                 });
 
         }, err => { // failed to update user
-            reject(HTTPError(500, "Could not update user."));
+            return next(HTTPError(500, "Could not update user."));
         });
 
 };
