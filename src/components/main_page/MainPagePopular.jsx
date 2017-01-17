@@ -10,11 +10,9 @@ function MainPagePopular(props) {
                 <h3>Popular</h3>
             </div>
             <div className="col-sm-6 col-xs-12">
-                <InterestItem />
+                <InterestItem interest={{title:"title", description: "description", usersInterested: []}}/>
             </div>
-            <div className="col-sm-6 col-xs-12">
-                <InterestItem />
-            </div>
+       
         </div>
     );
 };

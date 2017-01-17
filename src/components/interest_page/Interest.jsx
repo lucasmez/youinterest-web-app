@@ -21,7 +21,7 @@ class Interest extends Component {
         let addInterest;
         if(this.props.account) {
            addInterest =  (
-                <button className="btn btn-success pull-right" onClick={this.addInterest.bind(this)}>
+                <button className="btn btn-success btn-sm pull-right" onClick={this.addInterest.bind(this)}>
                     Add as interest <span className="glyphicon glyphicon-plus"></span>
                 </button> 
             );

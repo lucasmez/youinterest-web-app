@@ -16,16 +16,7 @@ function MainPageDigest(props) {
                         <h3>Recommended</h3>
                     </div>
                     <div className="col-sm-3 col-xs-6">
-                        <InterestItem type="short"/>
-                    </div>
-                    <div className="col-sm-3 col-xs-6">
-                        <InterestItem type="short"/>
-                    </div>
-                    <div className="col-sm-3 col-xs-6">
-                        <InterestItem type="short"/>
-                    </div>
-                    <div className="col-sm-3 col-xs-6">
-                        <InterestItem type="short"/>
+                        <InterestItem type="short" interest={{title:"title", description: "description", usersInterested: []}}/>
                     </div>
                 </div>
                 <div className="row">
