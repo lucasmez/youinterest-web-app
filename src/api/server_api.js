@@ -7,4 +7,8 @@ module.exports.getAccount = function(cb) {
     }, err => {
         cb({message: "Error getting request from server."});
     });
-}
+};
+
+module.exports.searchInterests = function(term ,cb) {
+    return $.ajax(`/api/interests?title=${term}`);
+};
