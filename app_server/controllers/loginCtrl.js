@@ -5,8 +5,8 @@ const {SERVER_URL, PORT} = require('../../config');
 function authenticateUser(req, name, password, cb) {
     let sess = req.session;
     
-    let request_url = `${SERVER_URL}:${PORT}/api/authenticate`;
-    
+    let request_url = `${SERVER_URL}api/authenticate`;
+    console.log("Login: ", request_url);
     axios({
         method: 'post',
         url: request_url,
@@ -20,7 +20,7 @@ function authenticateUser(req, name, password, cb) {
     }).then( response => {
             if(response.data.authentication === "success") {
                 // Ger user information
-                let request_url = `${SERVER_URL}:${PORT}/api/users?name=${encodeURIComponent(name)}`;
+                let request_url = `${SERVER_URL}api/users?name=${encodeURIComponent(name)}`;
            
                 return axios.get(request_url)
                     .then( ({data}) => {

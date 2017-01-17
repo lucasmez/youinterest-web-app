@@ -8,7 +8,7 @@ module.exports = (req, res, next) => {
     }
 
     let name = req.params.userName;
-    let request_url = `${SERVER_URL}:${PORT}/api/users?name=${encodeURIComponent(name)}`;
+    let request_url = `${SERVER_URL}api/users?name=${encodeURIComponent(name)}`;
  
     axios.get(request_url)
         .then( ({data}) => {
