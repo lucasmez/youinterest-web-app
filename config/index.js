@@ -17,7 +17,7 @@ else {
 	let developConfig;
     
 	try {
-		developConfig = require('./developmentConfig');
+		developConfig = require('../../Interest App Config/developmentConfig');
 	} catch(e) {
 		console.error("Error reading Development configuration file.", e.message);
 		process.exit(1);

@@ -1,9 +1,0 @@
-{
-	"DB_URI": "mongodb://test:test@ds159978.mlab.com:59978/interest",
-    "DB_SALT_FACTOR": 10,
-    "SERVER_URL": "http://127.0.0.1",
-	"PORT": 3000,
-    "SESSION": {
-        "SECRET": "mysecret"
-    }
-}
