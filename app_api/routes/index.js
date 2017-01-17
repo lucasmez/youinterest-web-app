@@ -15,7 +15,7 @@ api.delete("/users/:userId", users.deleteUser);
 api.delete("/users/:userId/interest", users.deleteInterest);
 
 // Interests
-api.get("/interest", interests.getInterestByName);  // Expects title query
+api.get("/interests", interests.getInterests);  // Expects query parameters
 api.get("/interest/:interestId", interests.getOneInterest);
 api.post("/interest", interests.createInterest);
 api.put("/interest/:interestId", interests.updateInterest);
