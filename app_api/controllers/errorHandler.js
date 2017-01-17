@@ -12,6 +12,11 @@ module.exports.HTTPError = (code, message) => {
 }
 
 module.exports.errorHandler = (err, req, res, next) => {
+    if (err.statusCode >= 100 && err.statusCode < 600)
+        res.status(err.statusCode);
+    else
+        res.status(500);
+    
 	res.status(err.statusCode);
 	res.json({"message": err.message});
 }
