@@ -9,30 +9,102 @@ function sendJson(res, contents, status) {
 	res.json(contents);
 }
 
-exports.getInterestByName = (req, res, next) => {
-     if(!(req.query && req.query.title)) {
-        return next( HTTPError(404, "No title parameter in request") );
-    }
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
 
-    Interest.find({title: req.query.title})
-        .then( interest => {
-            if(!interest.length)
-                return next( HTTPError(404, "Interest not found") );	
 
-            interest = interest[0];
+exports.getInterests = (req, res, next) => {
+    if(Object.keys(req.query).length === 0) // no query
+        return next( HTTPError(404, "No query parameters.") );
+    
+    let {title, tags, users, category, fields, limit, mode, format} = req.query;
+    
+    buildQuery().exec()
+    .then( results => {
+        if(results.length === 0)
+            return next( HTTPError(404, "No interest found.") ); 
         
-             let sendValue = {
-                title: interest.title,
-                description: interest.description,
-                usersInterested: interest.usersInterested || [],
-                category: interest.category || "",
-                tags: interest.tags || []
-            }
-			sendJson(res, sendValue);
+        if(!format || format === "id")
+            return sendJson(res, results);
         
+        else if(format !== "value")
+            return next( HTTPError(404, "format parameter should be either 'id' or 'value'.") ); 
+        
+        
+        replaceUserIdForName(results).then( interests => {
+            sendJson(res, interests);
+            
         }, err => {
-            next( HTTPError(404, "Interest not found") );
+            next( err );
         });
+        
+        
+    }, err => {
+        next( HTTPError(500, "Error making interest query.") );
+    });
+    
+    
+    function buildQuery() {
+        let query = {},
+            modee = (mode && (mode === "or")) ? "or" : "and"; //query format default to 'and'
+         
+            
+        if(title)
+            query.title = new RegExp("^"+escapeRegExp(title), "i");
+        
+        if(tags) {
+            if(modee === "and") 
+                query.tags = {$all: tags.split(",")}
+            
+            else 
+                query.tags = {$in: tags.split(",")}; 
+        }
+        
+        if(users) {    
+            if(modee === "and") 
+                query.usersInterested = {$all: users.split(",")}
+            
+            else 
+                query.usersInterested = {$in: users.split(",")}; 
+        }
+        
+        if(category)
+            query.category = category;
+
+        query = Interest.find(query);
+        
+        if(fields)
+            query = query.select(fields.replace(/,/g, " "));
+        
+        if(limit)
+            query = query.limit(parseInt(limit));
+        
+        return query;
+    }
+    
+    function replaceUserIdForName(interests) {
+        
+        return Promise.all(interests.map( interest => {
+            return User.find({_id: {$in: interest.usersInterested}}).select("name")
+                    .then( users => {
+                        let retInterest = {
+                            _id: interest._id,
+                            title: interest.title,
+                            description: interest.description,
+                            category: interest.category,
+                            tags: interest.tags
+                        };
+                
+                        retInterest.usersInterested = users.map( user => user.name);
+                        return retInterest;
+                
+                    }, err => {
+                        return HTTPError(500, "Error making user names queries.")
+                    });
+        }));
+    }   
+    
 };
 
 
