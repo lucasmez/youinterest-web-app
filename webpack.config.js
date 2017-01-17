@@ -8,8 +8,10 @@ module.exports = {
         root: __dirname,
         extensions: ['', '.js', '.jsx', '.json'],
         alias: {
+            config: 'src/config/index.js',
             Main: 'src/components/Main.jsx',
             Search: 'src/components/Search.jsx',
+            SearchResults: 'src/components/SearchResults.jsx',
             SiteBar: 'src/components/SiteBar.jsx',
             Interest: 'src/components/interest_page/Interest.jsx',
             InterestAbout: 'src/components/interest_page/InterestAbout.jsx',
@@ -37,6 +39,10 @@ module.exports = {
                 },
                 test: /\.jsx$/,
                 exclude: /(node_modules|config|app_api|app_server)/
+            },
+            {
+                loader: 'json-loader',
+                test: /\.json$/
             }
         ]
     }
