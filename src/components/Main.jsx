@@ -3,6 +3,7 @@ import React, {Component} from 'react';
 // Components
 import Search from 'Search';
 import SiteBar from 'SiteBar';
+import SearchResults from 'SearchResults';
 
 // API request helpers
 import {getAccount} from '../api/server_api';
@@ -12,7 +13,8 @@ class Main extends Component {
         super(props);
         
         this.state = {
-            account: null
+            account: null,
+            searchTerm: ""
         };
         
         getAccount( (response) => {
@@ -22,16 +24,36 @@ class Main extends Component {
     }
     
     
+    handleSearch(searchTerm) {
+        this.setState({searchTerm});
+    }
+    
+    renderMain() {
+        if(!this.state.searchTerm.length) {
+            return (
+                <div>
+                    {React.Children.map(this.props.children, child => React.cloneElement(child, {account: this.state.account}))}
+                </div>
+            );
+        }
+        
+        else {
+            return (
+                <div className="container">
+                    <SearchResults searchTerm={this.state.searchTerm} /> //TODO This is not updating!
+                </div>
+            ); 
+        }
+
+    }
+    
+    
     render() {
         return (
             <div>
                 <SiteBar account={this.state.account} />
-                <Search />
-                {React.Children.map(this.props.children, 
-                                    child => React.cloneElement(child, {
-                                        account: this.state.account
-                                    })
-                )}
+                <Search onSearch={this.handleSearch.bind(this)} />
+                {this.renderMain()}
             </div>
         );
     }
