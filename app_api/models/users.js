@@ -9,7 +9,9 @@ const UserSchema = new mongoose.Schema({
     password: {type: String, required: true},
 	bio: String,
 	createdOn: {type: Date, "default": Date.now},
-	interests: [Schema.Types.ObjectId]
+	interests: [Schema.Types.ObjectId],
+    friends: [Schema.Types.ObjectId],
+    matches: [Schema.Types.ObjectId]
 });
 
 UserSchema.pre('save', function(next) {
