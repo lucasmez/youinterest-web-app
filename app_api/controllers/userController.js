@@ -183,6 +183,89 @@ exports.getUsers = (req, res, next) => {
 
 };
 
+exports.getRecommendations = (req, res, next) => {
+    const MAX_COMMON_TAGS = 5;  // # of tags to return as most common ones
+    const MAX_COOMON_CATS = 2;  // # of categories to return as most common ones
+    
+    if(!(req.params && req.params.userId)) {
+		return next( HTTPError(404, "No user id in request") );
+	}
+    
+    User.findById(req.params.userId)
+    
+    .then( user => {
+        if(user.interests.length === 0)
+            throw HTTPError(404, "No interests to present.");
+        
+        return getCommonTagsAndCategories(user.interests)
+                .then( results => {
+                    let query = Interest.find({
+                                    _id: {$nin: user.interests},
+                                    tags: {$in: results.tags},
+                                    category: {$in: results.categories}
+                                });
+            
+                    if(req.params.limit)
+                        return query.limit(req.params.limit);
+                    else
+                        return query;
+
+                }, err => {
+                    throw HTTPError(500, "Error getting interests.");
+                });
+        
+    }, err => {
+        throw HTTPError(404, "User does not exist.");
+    })
+    
+    .then( recommendations => {
+        if(recommendations.length === 0)
+            return next( HTTPError(404, "No recommendations.") );
+        
+        sendJson(res, recommendations);
+        
+    }, err => {
+        next(err);
+    });
+    
+    
+    function getCommonTagsAndCategories(interestsIds) {
+        return new Promise( (resolve, reject) => {
+            Interest.find({_id: {$in: interestsIds}})
+            .then( interests => {
+                if(interests.length === 0)
+                    reject();
+                
+                //parse common tags and categories, resolve with {tags: ..., categoies: ...}
+                let tagsBuffer = {},
+                    catBuffer = {};
+                
+                interests.forEach( interest => {
+                    interest.tags.forEach( tag => {
+                        tagsBuffer[tag] = tagsBuffer[tag] ? tagsBuffer[tag] + 1 : 1;
+                    });
+                    
+                    catBuffer[interest.category] = catBuffer[interest.category] ? catBuffer[interest.category] + 1 : 1;
+                    
+                });
+                
+                let tagsSorted = Object.keys(tagsBuffer).sort( (a, b) =>  tagsBuffer[b] - tagsBuffer[a]),
+                    catsSorted = Object.keys(catBuffer).sort( (a, b) =>  catBuffer[b] - catBuffer[a]);
+                
+                resolve({
+                    tags: tagsSorted.slice(0, MAX_COMMON_TAGS),
+                    categories: catsSorted.slice(0, MAX_COOMON_CATS)
+                });
+                
+            }, err => {
+                reject(err);
+            }); 
+            
+        });
+    }
+   
+};
+
 exports.getOneUser = (req, res, next) => {
 	if(!(req.params && req.params.userId)) {
 		return next( HTTPError(404, "No user id in request") );
@@ -305,7 +388,7 @@ exports.addInterest = (req, res, next) => {
                 });
 
         }, err => { // failed to update user
-            return next(HTTPError(500, "Could not update user."));
+            return next(HTTPError(400, "Could not update user."));
         });
 
 };

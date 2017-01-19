@@ -7,6 +7,7 @@ module.exports = api;
 // Users
 api.get("/users", users.getUsers);     // Expects name and/or interest queries
 api.get("/users/:userId", users.getOneUser);
+api.get("/users/:userId/recommendations", users.getRecommendations);
 api.post("/authenticate", users.authenticate);
 api.post("/users", users.createUser);
 api.post("/users/:userId/interest", users.addInterest);
@@ -17,6 +18,7 @@ api.delete("/users/:userId/interest", users.deleteInterest);
 // Interests
 api.get("/interests", interests.getInterests);  // Expects query parameters
 api.get("/interest/:interestId", interests.getOneInterest);
+api.get("/interests/popular", interests.getPopular);
 api.post("/interest", interests.createInterest);
 api.put("/interest/:interestId", interests.updateInterest);
 api.delete("/interest/:interestId", interests.deleteInterest);

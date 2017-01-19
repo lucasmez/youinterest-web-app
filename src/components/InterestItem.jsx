@@ -1,5 +1,10 @@
 import React from 'react';
 
+function clickHandle(props){
+    location.href=`#/interest/${props.interest.title}`;
+}
+
+
 function InterestItem(props) {
     let {title, description, usersInterested} = props.interest;
 
@@ -9,7 +14,7 @@ function InterestItem(props) {
         };
         
         return (
-            <div className="media" style={shortStyle}>
+            <div onClick={() => clickHandle(props)} className="media" style={shortStyle}>
                 <div className="media-left">
                    <img className="media-object" src="http://placehold.it/200x120" />
                 </div><br/>
@@ -23,7 +28,7 @@ function InterestItem(props) {
     
     else
         return (
-            <div className="media">
+            <div onClick={() => clickHandle(props)} className="media">
                 <div className="media-left">
                     <a href="#/interest"><img className="media-object" src="http://placehold.it/200x120" /></a>
                 </div>

@@ -107,6 +107,36 @@ exports.getInterests = (req, res, next) => {
     
 };
 
+exports.getPopular = (req, res, next) => {
+    let query = [
+        { "$project": {
+            "title": 1,
+            "description": 1,
+            "tags": 1,
+            "category": 1,
+            "usersInterested": 1,
+            "users": { "$size": "$usersInterested" }
+        }},
+
+        { "$sort": { "users": -1 } },
+    ];
+    
+    
+    if(req.query && req.query.limit)
+        query.push({"$limit": parseInt(req.query.limit)});
+    
+    query = Interest.aggregate(query);
+    
+    query.exec().then( popular => {
+        if(popular.length === 0 )
+            return next( HTTPError(404, "No popular interests.") );
+            
+        sendJson(res, popular);
+        
+    }, err =>{
+        next( HTTPError(404, "No popular interests.") );
+    });
+};
 
 exports.getOneInterest = (req, res, next) => {
     if(!(req.params && req.params.interestId)) {

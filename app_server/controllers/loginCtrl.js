@@ -6,7 +6,7 @@ function authenticateUser(req, name, password, cb) {
     let sess = req.session;
     
     let request_url = `${SERVER_URL}api/authenticate`;
-    console.log("Login: ", request_url);
+
     axios({
         method: 'post',
         url: request_url,
@@ -31,6 +31,7 @@ function authenticateUser(req, name, password, cb) {
                     
                         sess.account = {
                             name: data.name,
+                            _id: data._id,
                             interests: data.interests
                         };
                     

@@ -24,6 +24,7 @@ module.exports = {
             MainPage: 'src/components/main_page/MainPage.jsx',
             MainPagePopular: 'src/components/main_page/MainPagePopular.jsx',
             MainPageDigest: 'src/components/main_page/MainPageDigest.jsx',
+            RecommendInterests: 'src/components/main_page/RecommendInterests.jsx',
             InterestItem: 'src/components/InterestItem.jsx',
             Matches: 'src/components/Matches.jsx',
             UserProfile: 'src/components/UserProfile.jsx',

@@ -8,7 +8,7 @@ class MainPage extends Component {
     
     getMainPage() {
         if(this.props.account)     // User is logged in
-            return <MainPageDigest />;
+            return <MainPageDigest account={this.props.account}/>;
         else 
            return <MainPagePopular />; 
         
